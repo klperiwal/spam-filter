@@ -1,43 +1,44 @@
 import streamlit as st
 import pickle
+
+import numpy as np
 import pandas as pd
 
-# Load the model and vectorizer
 tfidf = pickle.load(open('objects/vectorizer.pkl', 'rb'))
 model = pickle.load(open('objects/model.pkl', 'rb'))
 
-# Custom CSS for background and text styling
 st.markdown(
     """
     <style>
     body {
         background-color: #f0f2f6;
+        font-family: 'Times New Roman', Times, serif;
     }
     .main {
         padding: 20px;
     }
     .title {
-        font-family: 'Arial Black', sans-serif;
-        color: #4B0082;
+        color: #031b85;
         text-align: center;
-        margin-bottom: 50px;
+        margin-bottom: 30px;
     }
-    .input-section, .result-section {
-        margin: 50px 0;
-        padding: 20px;
-        background-color: #FFFFFF;
+    .input-section {
+        margin: 10px;
+        font-family: 'Times New Roman', Times, serif;
+    }
+    .result-section {
         border-radius: 10px;
+        margin: 10px;
         box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
     }
     .footer {
         text-align: center;
-        margin-top: 50px;
-        font-size: 14px;
-        color: #4B0082;
+        margin-top: 100px;
+        font-size: 16px;
+        color: black;
     }
-    .btn-primary {
-        background-color: #4B0082;
-        border-color: #4B0082;
+    .custom-button:hover {
+        background-color: #02135f;
     }
     </style>
     """,
@@ -51,15 +52,15 @@ st.markdown("<div class='input-section'><p>Enter the message:</p></div>", unsafe
 # User input
 user_input = st.text_area("Message")
 
-import re
-import string
+import re, string
+
 import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
-from nltk.stem.porter import PorterStemmer
-
-ps = PorterStemmer()
 stop_words = set(stopwords.words('english'))
+
+from nltk.stem.porter import PorterStemmer
+ps = PorterStemmer()
 
 def rem_stopwords(text):
     words = nltk.word_tokenize(text)
@@ -74,24 +75,34 @@ def text_cleaning(text):
     text = rem_stopwords(text)
     return text
 
-if st.button('Predict'):
+# Custom button using HTML and CSS
+# st.markdown(
+#     """
+#     <div style='text-align: center;'>
+#         <button class='custom-button' onclick="document.getElementById('predict-button').click();">Predict</button>
+#     </div>
+#     <button id='predict-button' style='display: none;'>Predict</button>
+#     """,
+#     unsafe_allow_html=True
+# )
+
+if st.button('Predict', key='predict-button'):
     if len(user_input.split()) < 5:
         st.warning("Please enter at least 5 words.")
     else:
-        msg = text_cleaning(user_input)
+        msg= text_cleaning(user_input)
         vector_input = tfidf.transform([msg])
-        result = model.predict(vector_input)[0]
-        proba = model.predict_proba(vector_input)[0]
+        result= model.predict(vector_input)[0]
+        prob= model.predict_proba(vector_input)[0]
 
-        spam_proba = proba[1] * 100
-        not_spam_proba = proba[0] * 100
+        spam_prob = prob[1] * 100
+        not_spam_prob = prob[0] * 100
 
-        if result == 1:
+        if spam_prob > 0.25:
             st.header("Spam")
-            st.write(f"There is a {spam_proba:.2f}% chance that this message is spam.")
         else:
             st.header("Not Spam")
-            st.write(f"There is a {not_spam_proba:.2f}% chance that this message is not spam.")
 
-# Footer
+        # st.write(f"Spam Probability: {spam_prob:.2f}% ")
+
 st.markdown("<div class='footer'>Managed by Kishan Periwal</div>", unsafe_allow_html=True)
